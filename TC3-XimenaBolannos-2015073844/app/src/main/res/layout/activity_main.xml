@@ -25,7 +25,8 @@
                 android:layout_height="match_parent"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
-                app:srcCompat="@color/colorAccent"
+                android:layout_marginRight="30dp"
+                app:srcCompat="@color/colorLyrics"
                 tools:layout_editor_absoluteX="8dp"
                 tools:layout_editor_absoluteY="8dp" />
 
@@ -35,8 +36,10 @@
                 android:layout_height="match_parent"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
+                android:layout_marginRight="30dp"
+                android:fontFamily="casual"
                 android:gravity="center_horizontal|center"
-                android:text="Probando"
+                android:text="¡ Bienvenido !"
                 android:textColor="@android:color/background_light"
                 android:textSize="20sp" />
 
@@ -50,30 +53,35 @@
             android:layout_centerHorizontal="true"
             android:orientation="horizontal">
 
+            <Button
+                android:id="@+id/btnMoveNegative"
+                android:layout_width="30dp"
+                android:layout_height="100dp"
+                android:layout_weight="1"
+                android:background="@drawable/back"
+                android:onClick="moveSongNegative" />
+
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="10dp"
                 android:layout_weight="1" />
 
             <Button
-                android:id="@+id/btnMoveNegative"
-                android:layout_width="20dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:background="@drawable/back"
-                android:onClick="moveSongNegative" />
-
-            <Button
                 android:id="@+id/playbtn"
-                android:layout_width="20dp"
+                android:layout_width="30dp"
                 android:layout_height="75dp"
                 android:layout_weight="1"
                 android:background="@drawable/play"
                 android:onClick="playClick" />
 
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="10dp"
+                android:layout_weight="1" />
+
             <Button
                 android:id="@+id/btnMovePositive"
-                android:layout_width="20dp"
+                android:layout_width="30dp"
                 android:layout_height="100dp"
                 android:layout_weight="1"
                 android:background="@drawable/next"
@@ -88,8 +96,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="150dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="30dp"
             android:background="@android:color/background_light"
             android:orientation="vertical">
 
@@ -97,6 +105,7 @@
                 android:id="@+id/textView2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="casual"
                 android:text="Avance"
                 android:textSize="25sp" />
 
@@ -109,6 +118,7 @@
                 android:id="@+id/textView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="casual"
                 android:text="Volumen"
                 android:textSize="25sp" />
 
@@ -129,6 +139,7 @@
                 android:id="@+id/musicListView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_marginRight="30dp"
                 android:background="@android:color/background_light" />
         </RelativeLayout>
 

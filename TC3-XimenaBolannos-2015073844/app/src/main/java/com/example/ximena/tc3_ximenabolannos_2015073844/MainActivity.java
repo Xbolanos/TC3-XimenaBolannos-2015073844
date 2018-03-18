@@ -7,11 +7,13 @@ import android.media.MediaPlayer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -22,25 +24,102 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class MainActivity extends AppCompatActivity {
-    final ArrayList<String> names =new ArrayList<String>();
-    final  ArrayList<ArrayList> lyrics =new ArrayList<ArrayList>();
-    final ArrayList<Integer> files =new ArrayList<>();
-    MediaPlayer mediaPlayer;
-    AudioManager audioManager;
-    SeekBar advancedSeekBar;
-    int indexSong = 0;
-    boolean playOn= false;
-    Animation animation1;
-    Button button;
-    double duration;
-    double song;
-    double currentLine;
-    boolean calledThread=false;
+    private final ArrayList<Song> names = new ArrayList<>();
+    private final  ArrayList<ArrayList> lyrics =new ArrayList<ArrayList>();
+    private final ArrayList<Integer> files =new ArrayList<>();
+    private MediaPlayer mediaPlayer;
+    private AudioManager audioManager;
+    private SeekBar advancedSeekBar;
+    private int indexSong = 0;
+    private boolean playOn= false;
+    private Animation animation1;
+    private Button button;
+    private double duration;
+    private double song;
+    private double currentLine=0;
+    private double nextLine;
+    private String time;
 
+    static class Song {
+        String song_name;
+        String singer;
 
+        public Song(String song_name, String singer) {
+            this.song_name = song_name;
+            this.singer = singer;
+        }
+
+        public String getSong_name() {
+            return song_name;
+        }
+
+        public void setSong_name(String song_name) {
+            this.song_name = song_name;
+        }
+
+        public String getSinger() {
+            return singer;
+        }
+
+        public void setSinger(String singer) {
+            this.singer = singer;
+        }
+    }
+
+    public static class CustomListAdapter extends BaseAdapter {
+        private ArrayList<Song> listData;
+        private LayoutInflater layoutInflater;
+
+        public CustomListAdapter(Context aContext, ArrayList<Song> listData) {
+            this.listData = listData;
+            layoutInflater = LayoutInflater.from(aContext);
+        }
+
+        @Override
+        public int getCount() {
+            return listData.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return listData.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = layoutInflater.inflate(R.layout.list_row_layout, null);
+                holder = new ViewHolder();
+                holder.headlineView = (TextView) convertView.findViewById(R.id.name);
+                holder.reporterNameView = (TextView) convertView.findViewById(R.id.singer);
+
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            holder.headlineView.setText(listData.get(position).getSong_name());
+            holder.reporterNameView.setText(listData.get(position).getSinger());
+
+            return convertView;
+        }
+
+        static class ViewHolder {
+            TextView headlineView;
+            TextView reporterNameView;
+
+        }
+    }
     public void readtxt(int fileRaw){
         BufferedReader reader;
         try{
@@ -63,7 +142,9 @@ public class MainActivity extends AppCompatActivity {
         if(!playOn){
             button.setBackgroundResource(R.drawable.pause);
             mediaPlayer.start();
-            moveSongAdvancedSeekBar();
+            seekBarsManager();
+
+            //moveSongAdvancedSeekBar();
             playOn=true;
 
         }else{
@@ -82,11 +163,13 @@ public class MainActivity extends AppCompatActivity {
         }
         if(!playOn){
             mediaPlayer= MediaPlayer.create(getApplicationContext(), files.get(indexSong));
+
         }else{
             mediaPlayer.stop();
             mediaPlayer= MediaPlayer.create(getApplicationContext(), files.get(indexSong));
             mediaPlayer.start();
         }
+        seekBarsManager();
 
     }
     public void moveSongNegative(View view){
@@ -102,8 +185,10 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer= MediaPlayer.create(getApplicationContext(), files.get(indexSong));
             mediaPlayer.start();
         }
+        seekBarsManager();
 
     }
+
     public void listRaw(){
         Field[] fields=R.raw.class.getFields();
         Resources res = getResources(); //resource handle
@@ -111,12 +196,17 @@ public class MainActivity extends AppCompatActivity {
 
             Integer resIdSound = res.getIdentifier (fields[count].getName(),  "raw", this.getPackageName());
             String name=fields[count].getName();
-            String[] parts = name.split("_");
+            String[] song_singer = name.split("0");
+            String[] parts = song_singer[0].split("_");
+            String[] singer = song_singer[1].split("_");
+
             System.out.println(parts[0]);
             System.out.println(!parts[0].equals("lyric"));
             if(!parts[0].equals("lyric")){
 
-                names.add(fix_name(parts));
+                Song song= new Song(fix_name(parts),fix_name(singer));
+                names.add(song);
+
                 files.add(resIdSound);
             }else{
                 readtxt(resIdSound);
@@ -187,43 +277,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void moveSongAdvancedSeekBar(){
+        currentLine=0;
+        new Timer().scheduleAtFixedRate(
 
-            new Thread() {
+                new TimerTask() {
 
-                double numAux = currentLine;
+                    double numAux = currentLine;
+                    @Override
+                    public void run() {
+                        runOnUiThread(new Runnable() {
 
-                public void run() {
-                    while (playOn) {
-
-                        try {
-                            runOnUiThread(new Runnable() {
-
-                                @Override
-                                public void run() {
-
-                                    currentLine = mediaPlayer.getCurrentPosition() / song;
-                                    Log.d("currentLine", String.valueOf(currentLine));
-                                    if (currentLine != numAux) {
-                                        animation((String) lyrics.get(indexSong).get((int) currentLine));
+                            @Override
+                            public void run() {
+                                    currentLine= mediaPlayer.getCurrentPosition()/song;
+                                    System.out.println(currentLine);
+                                    if (currentLine!=numAux) {
+                                        if(lyrics.get(indexSong).size()>currentLine){
+                                            animation((String) lyrics.get(indexSong).get((int) currentLine));
+                                        }
                                         numAux = currentLine;
                                     }
                                     advancedSeekBar.setProgress(mediaPlayer.getCurrentPosition());
 
 
-                                }
-                            });
-                            sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
 
+                            }
+                        });
                     }
+                }, 0, 1000
+        );
 
-
-                }
-            }.start();
 
     }
+
+
 
     public void animation(String text){
         TextView textView = findViewById(R.id.txtLetter);
@@ -235,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
         indexSong=i;
         mediaPlayer.stop();
         mediaPlayer= MediaPlayer.create(getApplicationContext(), files.get(i));
+        seekBarsManager();
         duration= mediaPlayer.getDuration();
         song= duration/(lyrics.get(indexSong).size());
         Log.d("duration", String.valueOf(duration));
@@ -243,13 +331,13 @@ public class MainActivity extends AppCompatActivity {
         button.setBackgroundResource(R.drawable.play);
         if(!playOn){
             button.setBackgroundResource(R.drawable.pause);
-            moveSongAdvancedSeekBar();
             mediaPlayer.start();
+
             playOn=true;
 
         }
 
-        seekBarsManager();
+
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -263,9 +351,8 @@ public class MainActivity extends AppCompatActivity {
 
         audioManager= (AudioManager)getSystemService(Context.AUDIO_SERVICE);
 
+        listView.setAdapter(new CustomListAdapter(this, names));
 
-        ArrayAdapter<String> arrayAdapter= new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1,names);
-        listView.setAdapter(arrayAdapter);
         mediaPlayer= MediaPlayer.create(getApplicationContext(), files.get(indexSong));
         duration= mediaPlayer.getDuration();
         song= duration/(lyrics.get(indexSong).size());
@@ -278,6 +365,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         seekBarsManager();
+        moveSongAdvancedSeekBar();
 
     }
 
